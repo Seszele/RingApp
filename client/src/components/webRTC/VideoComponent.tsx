@@ -6,11 +6,27 @@ const VideoComponent: React.FC = () => {
 	const [pc, setPc] = useState<RTCPeerConnection>(new RTCPeerConnection());
 	const [websocket, setWebSocket] = useState<WebSocket>();
 	const [visibility, setVisibility] = useState<string>("hidden");
+	const [audioTrack, setAudioTrack] = useState<MediaStreamTrack>();
 
 	useEffect(() => {
 		setWebSocket(new WebSocket("ws://raspberrypi:8000/signaling/ws/2"));
 		console.log("Websocket created");
 	}, []);
+
+	useEffect(() => {
+		navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+		.then(function(stream) {
+			const audioTracks = stream.getAudioTracks();
+			for(var i = 0; i < audioTracks.length; i++) {
+				pc.addTrack(audioTracks[i], stream);
+			}
+		})
+		.catch(function(err) {
+			console.log('Błąd podczas uzyskiwania dostępu do mikrofonu: ' + err.name);
+		});
+	}, []);
+	
+	console.log(audioTrack);
 
 	async function start() {
 		setVisibility("visible");
@@ -38,9 +54,16 @@ const VideoComponent: React.FC = () => {
 
 		pc.ontrack = (event) => {
 			// Check if the video element already has a stream
-			if (!videoRef.current!.srcObject) {
+			// if (!videoRef.current!.srcObject) {
+			// 	videoRef.current!.srcObject = event.streams[0];
+			// 	videoRef.current!.play(); // Ensure the video starts playing
+			// }
+			console.log(event);
+			if (event.track.kind === "audio") {
+				setAudioTrack(event.track);
 				videoRef.current!.srcObject = event.streams[0];
-				videoRef.current!.play(); // Ensure the video starts playing
+				videoRef.current!.play();
+			
 			}
 		};
 
@@ -68,7 +91,6 @@ const VideoComponent: React.FC = () => {
 					ref={videoRef}
 					autoPlay
 					playsInline
-					muted
 					style={{ visibility: visibility }}
 					className="w-full h-auto object-cover object-center"
 				/>
