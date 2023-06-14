@@ -1,7 +1,7 @@
 import asyncio
 from gpiozero import LED, Buzzer, Button
 from fastapi import FastAPI
-from starlette.websockets import WebSocket
+from starlette.websockets import WebSocket, WebSocketDisconnect
 from uvicorn import run
 import json
 from websockets.exceptions import WebSocketException
@@ -53,9 +53,12 @@ async def websocket_endpoint(websocket: WebSocket):
 
             else:
                 await websocket.send_text("Nieznane polecenie.")
-    except WebSocketException:
+    except (WebSocketException, WebSocketDisconnect):
         app.active_connections.remove(websocket)
         print(f"Connection closed Total connections: {len(app.active_connections)}")
+
+    # remove drom active connections when client disconnects
+    app.active_connections.remove(websocket)
 
 
 # Nasłuchuj na przycisk
