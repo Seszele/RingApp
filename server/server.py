@@ -13,7 +13,8 @@ button = Button(17)
 app = FastAPI()
 app.active_connections = set()
 
-main_loop = None  
+main_loop = None
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -21,6 +22,8 @@ async def startup_event():
     main_loop = asyncio.get_running_loop()
 
 # WebSocket do obsługi zdarzeń w czasie rzeczywistym
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -45,7 +48,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 if data["buzzer"] == "on":
                     buzzer.on()
                     led.on()
-                    await asyncio.sleep(5)  # buzzer zostanie włączony na 5 sekund
+                    # buzzer zostanie włączony na 5 sekund
+                    await asyncio.sleep(5)
                     led.off()
                     buzzer.off()
                 else:
@@ -54,11 +58,14 @@ async def websocket_endpoint(websocket: WebSocket):
             else:
                 await websocket.send_text("Nieznane polecenie.")
     except (WebSocketException, WebSocketDisconnect):
-        app.active_connections.remove(websocket)
-        print(f"Connection closed Total connections: {len(app.active_connections)}")
+        if websocket in app.active_connections:
+            app.active_connections.remove(websocket)
+        print(
+            f"Connection closed Total connections: {len(app.active_connections)}")
 
     # remove drom active connections when client disconnects
-    app.active_connections.remove(websocket)
+    if websocket in app.active_connections:
+        app.active_connections.remove(websocket)
 
 
 # Nasłuchuj na przycisk
@@ -76,4 +83,3 @@ async def notify_clients():
 
 # Przypisz funkcję button_pressed do zdarzenia naciśnięcia przycisku
 button.when_pressed = button_pressed
-
