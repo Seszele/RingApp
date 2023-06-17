@@ -9,61 +9,69 @@ const VideoComponent: React.FC = () => {
 	const [audioTrack, setAudioTrack] = useState<MediaStreamTrack>();
 
 	useEffect(() => {
-		setWebSocket(new WebSocket("ws://raspberrypi:8000/signaling/ws/2"));
+		setWebSocket(new WebSocket("ws://192.168.0.69:8000/signaling/ws/2"));
 		console.log("Websocket created");
 	}, []);
 
 	useEffect(() => {
 		navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-		.then(function(stream) {
-			const audioTracks = stream.getAudioTracks();
-			for(var i = 0; i < audioTracks.length; i++) {
-				pc.addTrack(audioTracks[i], stream);
-			}
-		})
-		.catch(function(err) {
-			console.log('Błąd podczas uzyskiwania dostępu do mikrofonu: ' + err.name);
-		});
+			.then(function (stream) {
+				const audioTracks = stream.getAudioTracks();
+				for (var i = 0; i < audioTracks.length; i++) {
+					pc.addTrack(audioTracks[i], stream);
+				}
+			})
+			.catch(function (err) {
+				console.log('Błąd podczas uzyskiwania dostępu do mikrofonu: ' + err.name);
+			});
 	}, []);
-	
+
 	console.log(audioTrack);
 
 	async function start() {
 		setVisibility("visible");
 		websocket!.onmessage = async (message) => {
 			const data = JSON.parse(message.data);
-			console.log("Received message:", data);
+			console.log("important Received message:", data);
 			if (data.type === "answer") {
 				await pc.setRemoteDescription(
 					new RTCSessionDescription({ type: data.type, sdp: data.sdp })
 				);
+				// const answer = await pc.createAnswer();
+				// await pc.setLocalDescription(answer);
 			} else if (data.type === "candidate") {
-				console.log("Received ICE candidate");
+				console.log("important Received ICE candidate");
 				const candidate = new RTCIceCandidate(data.candidate);
 				await pc.addIceCandidate(candidate);
 			}
 		};
+		websocket!.onopen = () => {
+			// const offer = await pc.createOffer(offerOptions);
+			// await pc.setLocalDescription(offer);
+			// websocket!.send(JSON.stringify({ type: "offer", sdp: offer.sdp }));
+			console.log("important WebSocket opened");
+		};
 
 		websocket!.onclose = () => {
-			console.log("WebSocket closed");
+			console.log("important WebSocket closed");
 		};
 
 		websocket!.onerror = (error) => {
-			console.error("WebSocket error:", error);
+			console.error("important WebSocket error:", error);
 		};
 
 		pc.ontrack = (event) => {
 			// Check if the video element already has a stream
-			// if (!videoRef.current!.srcObject) {
-			// 	videoRef.current!.srcObject = event.streams[0];
-			// 	videoRef.current!.play(); // Ensure the video starts playing
-			// }
+			if (!videoRef.current!.srcObject) {
+				videoRef.current!.srcObject = event.streams[0];
+				// videoRef.current!.play(); // Ensure the video starts playing
+			}
 			console.log(event);
 			if (event.track.kind === "audio") {
 				setAudioTrack(event.track);
 				videoRef.current!.srcObject = event.streams[0];
-				videoRef.current!.play();
-			
+				// videoRef.current!.play();
+
 			}
 		};
 
@@ -81,7 +89,13 @@ const VideoComponent: React.FC = () => {
 		};
 		const offer = await pc.createOffer(offerOptions);
 		await pc.setLocalDescription(offer);
-		websocket!.send(JSON.stringify({ type: "offer", sdp: offer.sdp }));
+		// check if the websocket is open
+		if (websocket!.readyState === websocket!.OPEN) {
+			websocket!.send(JSON.stringify({ type: "offer", sdp: offer.sdp }));
+		}
+		else {
+			console.log("important Websocket is not open");
+		}
 	}
 
 	return (

@@ -1,0 +1,113 @@
+@layer components {
+    @keyframes slide-in-x-left {
+        0% {
+            transform: translateX(-100%);
+            z-index: -1;
+        }
+
+        100% {
+            transform: translateX(0%);
+        }
+    }
+
+    .slide-in-x-left {
+        animation: slide-in-x-left 300ms backwards;
+        animation-delay: 600ms;
+    }
+
+    @keyframes slide-out-x-left {
+        0% {
+            transform: translateX(0%);
+        }
+
+        100% {
+            transform: translateX(-100%);
+        }
+    }
+
+    .slide-out-x-left {
+        animation: slide-out-x-left 300ms forwards;
+    }
+
+    /* For sliding down and changing shape */
+    @keyframes slide-down {
+        0% {
+            align-items: flex-start;
+            transform: translateY(0);
+        }
+
+        100% {
+            align-items: flex-start;
+            margin-top: 10px;
+            transform: translateY(100%);
+        }
+    }
+
+    .slide-down {
+        animation: slide-down 600ms ease-in-out forwards;
+    }
+
+    @keyframes slide-up {
+        0% {
+            align-items: flex-start;
+            margin-top: 10px;
+            transform: translateY(100%);
+        }
+
+        100% {
+            align-items: center;
+            transform: translateY(0);
+        }
+    }
+
+    .slide-up {
+        animation: slide-up 600ms ease-in-out backwards;
+    }
+
+    @keyframes change-shape {
+        0% {
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+        }
+
+        100% {
+            width: 30%;
+            height: 15%;
+            border-radius: 99999px;
+        }
+    }
+
+    .change-shape {
+        animation: change-shape 300ms forwards;
+        animation-delay: 250ms;
+    }
+
+    @keyframes change-shape-reverse {
+        0% {
+            width: 30%;
+            height: 15%;
+            border-radius: 99999px;
+
+        }
+
+        100% {
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+        }
+    }
+
+    .change-shape-reverse {
+        animation: change-shape-reverse 300ms backwards;
+        animation-delay: 100ms;
+    }
+
+    .slide-down-shape {
+        animation: slide-down 300ms forwards, change-shape 300ms forwards;
+    }
+
+    .slide-up-shape {
+        animation: slide-up 300ms forwards, change-shape-reverse 300ms forwards;
+    }
+}

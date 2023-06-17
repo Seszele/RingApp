@@ -7,6 +7,11 @@ export default {
   theme: {
     extend: {},
   },
+  variants: {
+    extend: {
+      animation: ['responsive', 'motion-safe', 'motion-reduce', 'reverse'],
+    },
+  },
   plugins: [],
 }
 
