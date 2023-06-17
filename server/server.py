@@ -21,8 +21,6 @@ async def startup_event():
     global main_loop
     main_loop = asyncio.get_running_loop()
 
-# WebSocket do obsługi zdarzeń w czasie rzeczywistym
-
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -81,5 +79,4 @@ async def notify_clients():
         await connection.send_text("Button has been pressed.")
 
 
-# Przypisz funkcję button_pressed do zdarzenia naciśnięcia przycisku
 button.when_pressed = button_pressed
