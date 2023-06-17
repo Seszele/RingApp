@@ -1,16 +1,19 @@
-import time
+import asyncio
+import json
+import logging
+import os
+import re
+from typing import List
+
+import numpy as np
+import sounddevice as sd
+from aiortc import RTCIceCandidate, RTCPeerConnection, RTCSessionDescription
+from aiortc.contrib.media import MediaPlayer, MediaBlackhole
+from av import AudioFrame, VideoFrame
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
-import json
-from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, RTCIceCandidate, RTCIceServer, RTCConfiguration
-import cv2
-import logging
-import re
-import asyncio
-from av import VideoFrame
-from aiortc.mediastreams import MediaStreamTrack
-from fractions import Fraction
+
+os.environ["PULSE_SERVER"] = "/run/user/1000/pulse/native"
 
 app = FastAPI()
 app.add_middleware(
@@ -26,43 +29,42 @@ logger = logging.getLogger("uvicorn")
 logger.setLevel(logging.DEBUG)
 
 
-class CameraVideoStreamTrack(MediaStreamTrack):
-    kind = "video"
+class SoundDevicePlayer:
+    def __init__(self, samplerate, channels):
+        self.samplerate = samplerate
+        self.channels = channels
+        self.stream = None
+        self.device_available = self.check_output_device()
+        if self.device_available:
+            self.stream = sd.OutputStream(
+                samplerate=self.samplerate, channels=self.channels, dtype=np.int16)
+            self.stream.start()
 
-    def __init__(self):
-        super().__init__()
-        self.cap = cv2.VideoCapture(0)
-        self.timeframe = 60
-        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    def check_output_device(self):
+        devices = sd.query_devices(kind='output')
+        if devices['index'] == 10:
+            return False
+        return len(devices) > 1
 
-    async def recv(self):
-        if self.cap is None:
-            self.cap = cv2.VideoCapture(0)
+    def play(self, audio_frame: AudioFrame):
+        if isinstance(audio_frame, AudioFrame):
+            audio_data = np.squeeze(audio_frame.to_ndarray())
+            audio_data = audio_data.reshape(-1, self.channels)
+            self.stream.write(audio_data)
 
-        ret, frame = self.cap.read()
-        if not ret:
-            print("Could not read frame")
-            return None
+    def close(self):
+        self.stream.stop()
+        self.stream.close()
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        video_frame = VideoFrame.from_ndarray(frame, format="rgb24")
-        video_frame.time_base = Fraction(1, self.timeframe)
-        video_frame.pts = int(time.time() * self.timeframe)
 
-        return video_frame
-
-    def release(self):
-        if self.cap is not None and self.cap.isOpened():
-            self.cap.release()
-            self.cap = None
+player = SoundDevicePlayer(samplerate=48000, channels=2)
 
 
 def create_rtccandidate(data):
-    raw_candidate = data['candidate']['candidate']
-    sdp_mid = data['candidate']['sdpMid']
-    sdp_mline_index = data['candidate']['sdpMLineIndex']
-    username_fragment = data['candidate']['usernameFragment']
+    raw_candidate = data["candidate"]["candidate"]
+    sdp_mid = data["candidate"]["sdpMid"]
+    sdp_mline_index = data["candidate"]["sdpMLineIndex"]
+    username_fragment = data["candidate"]["usernameFragment"]
 
     pattern = re.compile(
         r"candidate:(?P<foundation>\S+)\s"
@@ -96,49 +98,89 @@ def create_rtccandidate(data):
     return candidate
 
 
+def check_microphone_device(device_name):
+    devices = sd.query_devices()
+    for device in devices:
+        if device_name in device['name']:
+            return True
+    return False
+
+
 @app.websocket("/signaling/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await websocket.accept()
     clients.append(websocket)
     print("clients connected: ", clients)
 
-    ice_servers = [
-        RTCIceServer(urls="stun:stun.services.mozilla.com"),
-        RTCIceServer(urls="stun:stun.l.google.com:19302"),
-        RTCIceServer(urls="stun:stun1.l.google.com:19302"),
-        RTCIceServer(urls="stun:stun2.l.google.com:19302"),
-    ]
+    pc = RTCPeerConnection()
+    try:
+        video_track = MediaPlayer('/dev/video0', format='v4l2', options={
+            'video_size': '640x360'
+        }).video
+        if check_microphone_device('hw:2,0'):
+            audio_track = MediaPlayer('hw:2,0', format='alsa', options={
+                'sample_rate': '48000',
+                'channels': '1',
+            }).audio
+            if (audio_track is not None):
+                pc.addTrack(audio_track)
+        else:
+            logger.warning("Audio device not found")
 
-    config = RTCConfiguration(iceServers=ice_servers)
-    pc = RTCPeerConnection(config)
-    video_track = CameraVideoStreamTrack()
-    pc.addTrack(video_track)
+        pc.addTrack(video_track)
+    except Exception as e:
+        print(e)
 
     @pc.on("track")
-    def on_track(track):
-        print("Track received")
+    async def on_track(track):
+        if track.kind == "audio":
+            if player.device_available:
+                logger.info("Audio device available. Playing audio...")
+                while True:
+                    try:
+                        frame = await track.recv()
+                    except Exception as e:
+                        break
+                    if isinstance(frame, AudioFrame):
+                        try:
+                            player.play(frame)
+                        except Exception as e:
+                            print(e)
+                            logger.error("is not an instance")
+            else:
+                logger.warning(
+                    "No output audio device available. Discarding audio...")
+                blackhole = MediaBlackhole()
+                blackhole.addTrack(track)
+                await blackhole.start()
+
+    @pc.on("close")
+    async def on_close():
+        print("Connection closed")
+        await websocket.close()
 
     def on_icecandidate(candidate):
         print("Sending ICE candidate")
         if candidate:
             print(candidate)
-            websocket.send_text(json.dumps(
-                {"type": "candidate", "candidate": candidate.___dict___}))
+            websocket.send_text(
+                json.dumps(
+                    {"type": "candidate", "candidate": candidate.___dict___})
+            )
 
-    pc.on("icecandidate", lambda candidate: asyncio.ensure_future(
-        on_icecandidate(candidate)))
+    pc.on(
+        "icecandidate",
+        lambda candidate: asyncio.ensure_future(on_icecandidate(candidate)),
+    )
 
     async def handle_offer(data):
-        await pc.setRemoteDescription(RTCSessionDescription(type=data["type"], sdp=data["sdp"]))
+        await pc.setRemoteDescription(
+            RTCSessionDescription(type=data["type"], sdp=data["sdp"])
+        )
 
         answer = await pc.createAnswer()
 
-        # print(f"Answer type: {answer.type}")
-        # print(f"Answer SDP: {answer.sdp}")
-
         await pc.setLocalDescription(answer)
-
-        # logger.debug("KUPKAUWU")
 
         return {
             "type": "answer",
@@ -146,19 +188,16 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         }
 
     async def handle_candidate(candidate_data):
-        # candidate_data = candidate_data['candidate']
         candidate = create_rtccandidate(candidate_data)
         await pc.addIceCandidate(candidate)
         logger.debug(candidate)
         logger.debug("dodano kandydata")
-        # send the cadidate to the other peer (temp)
-        # await websocket.send_text(candidate_data)
-        # logger.debug("wyslano kandydata")
 
     try:
         while True:
             message = await websocket.receive_text()
             data = json.loads(message)
+            print(data["type"])
             if data["type"] == "offer":
                 answer = await handle_offer(data)
                 await websocket.send_text(json.dumps(answer))
@@ -167,8 +206,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     except Exception as e:
         print(f"Client {client_id} disconnected: {str(e)}")
     finally:
-        video_track.release()
-        if websocket in clients:
-            clients.remove(websocket)
-        await websocket.close()
-        await pc.close()
+        try:
+            if websocket in clients:
+                clients.remove(websocket)
+            await websocket.close()
+            await pc.close()
+        except Exception as e:
+            print(e)
