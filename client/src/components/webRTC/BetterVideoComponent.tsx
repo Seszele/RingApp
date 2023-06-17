@@ -138,22 +138,24 @@ const BetterVideoComponent: React.FC = () => {
             <video ref={videoRef} className="w-full max-w-2xl overflow-hidden rounded-lg aspect-video" autoPlay playsInline />
             <div className={`z-3 absolute top-0 left-0 w-full h-full flex items-center justify-center
             ${connected ? 'slide-down' : 'slide-up'}`}>
-                <button
-                    className={`z-3 flex items-center justify-center bg-green-600 text-white w-full max-w-2xl h-full rounded-lg
+                <div className='flex items-center w-full h-full justify-center'>
+                    <button
+                        className={`z-3 flex items-center justify-center bg-green-600 text-white w-full max-w-2xl h-full rounded-lg
                     hover:bg-green-800 transition-colors duration-200 
                     ${connected ? 'change-shape' : 'change-shape-reverse'}`}
-                    onClick={connected ? disconnect : connect}
-                >
-                    {connected ? <FontAwesomeIcon icon={faPause} size="2x" /> : (isConnecting ? <FontAwesomeIcon icon={faSpinner} size="2x" className={`${isConnecting ? "animate-spin" : ""}`} /> : <FontAwesomeIcon icon={faPlay} size="2x" />)}
-                </button>
-                <div className={`${connected ? 'z-0 block slide-in-x-left' : 'hidden'}`}>
-                    <button
-                        className={`flex ml-2 items-center justify-center bg-green-600 text-white w-12 h-12 rounded-full
-                        hover:bg-green-800 transition-colors duration-200`}
-                        onClick={mute ? unmuteMicrophone : muteMicrophone}
+                        onClick={connected ? disconnect : connect}
                     >
-                        {mute ? <FontAwesomeIcon icon={faMicrophoneSlash} color='red' size="1x" /> : <FontAwesomeIcon icon={faMicrophone} size="1x" />}
+                        {connected ? <FontAwesomeIcon icon={faPause} size="2x" /> : (isConnecting ? <FontAwesomeIcon icon={faSpinner} size="2x" className={`${isConnecting ? "animate-spin" : ""}`} /> : <FontAwesomeIcon icon={faPlay} size="2x" />)}
                     </button>
+                    <div className={`${connected ? 'z-0 block slide-in-x-left' : 'hidden'}`}>
+                        <button
+                            className={`flex ml-2 items-center justify-center bg-green-600 ${mute && "bg-red-600 hover:bg-red-800"} text-white w-12 h-12 rounded-full
+                        hover:bg-green-800 transition-colors duration-200`}
+                            onClick={mute ? unmuteMicrophone : muteMicrophone}
+                        >
+                            {mute ? <FontAwesomeIcon icon={faMicrophoneSlash} size="1x" /> : <FontAwesomeIcon icon={faMicrophone} size="1x" />}
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -39,7 +39,7 @@
         100% {
             align-items: flex-start;
             margin-top: 10px;
-            transform: translateY(100%);
+            transform: translateY(60%);
         }
     }
 
@@ -51,7 +51,7 @@
         0% {
             align-items: flex-start;
             margin-top: 10px;
-            transform: translateY(100%);
+            transform: translateY(60%);
         }
 
         100% {

@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import VideoComponent from "../webRTC/VideoComponent";
 import BetterVideoComponent from "../webRTC/BetterVideoComponent";
 import logo from "../../assets/logo.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import toast, { Toaster } from "react-hot-toast";
-import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
+import toast from "react-hot-toast";
+import { faBell, faDoorOpen, faLightbulb } from "@fortawesome/free-solid-svg-icons";
 
 function showNotification(title: string, body: string) {
 	if (!("Notification" in window)) {
@@ -41,8 +40,6 @@ function askNotificationPermission() {
 const MainView: React.FC = () => {
 	const [light, setLight] = useState<boolean>(false);
 	const [lightToast, setLightToast] = useState<string>();
-	const [microphone, setMicrophone] = useState<boolean>(false);
-	const [microphoneToast, setMicrophoneToast] = useState<string>();
 	const [ws, setWs] = useState<WebSocket | null>(null);
 
 	const wsRef = useRef<WebSocket | null>(null);
@@ -60,7 +57,7 @@ const MainView: React.FC = () => {
 			if (message === "Button has been pressed.") {
 				toast(
 					<span>
-						<FontAwesomeIcon icon="fas fa-bell"></FontAwesomeIcon> Przycisk został naciśnięty!
+						<FontAwesomeIcon icon={faBell}></FontAwesomeIcon> Przycisk został naciśnięty!
 					</span>,
 					{
 						duration: 5000,
@@ -91,30 +88,6 @@ const MainView: React.FC = () => {
 		};
 	}, []);
 
-	function turnOnMicrophone() {
-		setMicrophoneToast(
-			toast(
-				<span>
-					<FontAwesomeIcon icon="fas fa-microphone"></FontAwesomeIcon> Uwaga -
-					mikrofon jest włączony!
-				</span>,
-				{
-					duration: Infinity,
-					style: {
-						background: "#4B5563",
-						color: "#F3F4F6",
-					},
-				}
-			)
-		);
-		setMicrophone(true);
-	}
-
-	function turnOffMicrophone() {
-		toast.dismiss(microphoneToast!);
-		setMicrophone(false);
-	}
-
 	function turnOnLight() {
 		if (ws) {
 			ws.send(JSON.stringify({ light: "on" }));
@@ -122,7 +95,7 @@ const MainView: React.FC = () => {
 		setLightToast(
 			toast(
 				<span>
-					<FontAwesomeIcon icon="fas fa-lightbulb"></FontAwesomeIcon> Uwaga -
+					<FontAwesomeIcon icon={faLightbulb}></FontAwesomeIcon> Uwaga -
 					światło jest włączone!
 				</span>,
 				{
@@ -157,40 +130,24 @@ const MainView: React.FC = () => {
 				<img src={logo} alt="Logo" className="w-32 mr-4" />
 				<h1 className="text-3xl font-semibold">R.I.N.G.</h1>
 			</header>
-			<main className="p-4  flex flex-col items-center">
-				<BetterVideoComponent />
+			<main className="p-4 flex items-center justify-center  mr-48">
 
-				<div className="flex flex-wrap justify-center mt-24">
-					{!light ? (
-						<button
-							className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-full m-2 transition duration-300 ease-in-out transform "
-							onClick={
-								turnOnLight
-							}
-						>
-							<FontAwesomeIcon icon={faLightbulb}></FontAwesomeIcon> Włącz
-							światło
-						</button>
-					) : (
-						<button
-							className="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-full m-2 transition duration-300 ease-in-out transform "
-							onClick={
-								turnOffLight
-							}
-						>
-							<FontAwesomeIcon icon={faLightbulb}></FontAwesomeIcon> Wyłącz
-							światło
-						</button>
-					)
-					}
+				<div className="flex flex-col flex-wrap justify-center mr-12 ">
+
 					<button
-						className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-full m-2 transition duration-300 ease-in-out transform"
+						className={`bg-green-600 hover:bg-green-800 ${light && "bg-red-600 hover:bg-red-800"} text-white font-bold py-4 px-5 rounded-full m-2 transition duration-300 ease-in-out transform `}
+						onClick={light ? turnOffLight : turnOnLight}
+					>
+						<FontAwesomeIcon icon={faLightbulb} size="2xl"></FontAwesomeIcon>
+					</button>
+					<button
+						className="bg-green-600 hover:bg-green-800 text-white font-bold py-4 px-4 rounded-full m-2 transition duration-300 ease-in-out transform"
 						onClick={openDoors}
 					>
-						<FontAwesomeIcon icon="fas fa-door-open"></FontAwesomeIcon> Odblokuj
-						drzwi
+						<FontAwesomeIcon icon={faDoorOpen} size="2xl"></FontAwesomeIcon>
 					</button>
 				</div>
+				<BetterVideoComponent />
 			</main>
 		</div>
 	);
