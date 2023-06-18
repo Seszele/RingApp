@@ -1,32 +1,39 @@
 @layer components {
     @keyframes slide-in-x-left {
         0% {
-            transform: translateX(-100%);
-            z-index: -1;
+            transform: translateX(0%);
+            display: hidden;
+            z-index: -50;
+        }
+
+        99% {
+            z-index: -50;
         }
 
         100% {
-            transform: translateX(0%);
+            transform: translateX(310%);
+            z-index: 50;
+            display: none;
         }
     }
 
     .slide-in-x-left {
-        animation: slide-in-x-left 300ms backwards;
+        animation: slide-in-x-left 300ms forwards;
         animation-delay: 600ms;
     }
 
     @keyframes slide-out-x-left {
         0% {
-            transform: translateX(0%);
+            transform: translateX(310%);
         }
 
         100% {
-            transform: translateX(-100%);
+            transform: translateX(0%);
         }
     }
 
     .slide-out-x-left {
-        animation: slide-out-x-left 300ms forwards;
+        animation: slide-out-x-left 600ms forwards;
     }
 
     /* For sliding down and changing shape */
@@ -62,6 +69,7 @@
 
     .slide-up {
         animation: slide-up 600ms ease-in-out backwards;
+        animation-delay: 400ms;
     }
 
     @keyframes change-shape {
@@ -100,7 +108,7 @@
 
     .change-shape-reverse {
         animation: change-shape-reverse 300ms backwards;
-        animation-delay: 100ms;
+        animation-delay: 500ms;
     }
 
     .slide-down-shape {

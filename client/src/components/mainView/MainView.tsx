@@ -135,13 +135,13 @@ const MainView: React.FC = () => {
 				<div className="flex flex-col flex-wrap justify-center mr-12 ">
 
 					<button
-						className={`bg-green-600 hover:bg-green-800 ${light && "bg-red-600 hover:bg-red-800"} text-white font-bold py-4 px-5 rounded-full m-2 transition duration-300 ease-in-out transform `}
+						className={` ${light ? "bg-red-600 hover:bg-red-800" : 'bg-teal-800 hover:bg-teal-900'} text-white font-bold py-4 px-5 rounded-full m-2 transition duration-300 ease-in-out transform `}
 						onClick={light ? turnOffLight : turnOnLight}
 					>
 						<FontAwesomeIcon icon={faLightbulb} size="2xl"></FontAwesomeIcon>
 					</button>
 					<button
-						className="bg-green-600 hover:bg-green-800 text-white font-bold py-4 px-4 rounded-full m-2 transition duration-300 ease-in-out transform"
+						className="bg-teal-800 hover:bg-teal-900 text-white font-bold py-4 px-4 rounded-full m-2 transition duration-300 ease-in-out transform"
 						onClick={openDoors}
 					>
 						<FontAwesomeIcon icon={faDoorOpen} size="2xl"></FontAwesomeIcon>
