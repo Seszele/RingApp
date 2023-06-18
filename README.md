@@ -25,7 +25,8 @@ To run the software, follow these steps:
 2. Navigate to the project directory.
 3. Install the necessary dependencies. `pip install -r requirements.txt`
 4. Run the server-side application using the `./start_servers.sh`
-5. Run the client-side application using `npm start`.
+5. Navigate to the client directory and install all required packages using `npm install`
+6. Run the client-side application using `npm start`.
 
 ## Starting and Stopping Servers
 To start the servers, run the `start_servers.sh` script. This script will start both the server-side application hosted on the Raspberry Pi and the client-side application.
